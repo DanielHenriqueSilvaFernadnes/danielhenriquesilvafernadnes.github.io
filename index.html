@@ -5,8 +5,8 @@
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.5">
-<meta name="author" content="Doc Writer">
-<title>Hello, AsciiDoc!</title>
+<meta name="author" content="Daniel Henrique Silva Fernandes &lt;danielhenriquesou@hotmail.com&gt;">
+<title>PROCESSAMENTO DIGITAL DE IMAGENS</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -421,10 +421,9 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </head>
 <body class="article">
 <div id="header">
-<h1>Hello, AsciiDoc!</h1>
+<h1>PROCESSAMENTO DIGITAL DE IMAGENS</h1>
 <div class="details">
-<span id="author" class="author">Doc Writer</span><br>
-<span id="email" class="email"><a href="mailto:doc@example.com">doc@example.com</a></span><br>
+<span id="author" class="author">Daniel Henrique Silva Fernandes &lt;danielhenriquesou@hotmail.com&gt;</span><br>
 </div>
 </div>
 <div id="content">
@@ -436,21 +435,49 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 </div>
 <div class="sect1">
-<h2 id="_first_section">First Section</h2>
+<h2 id="_unidade_1">Unidade 1</h2>
 <div class="sectionbody">
-<div class="ulist">
-<ul>
-<li>
-<p>item 1</p>
-</li>
-<li>
-<p>item 2</p>
-</li>
-</ul>
-</div>
-<div class="listingblock">
+<div class="sect2">
+<h3 id="_regions">regions</h3>
+<div id="exa_regions" class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-ruby" data-lang="ruby">puts "Hello, World!"</code></pre>
+<pre class="highlight"><code class="language-cpp" data-lang="cpp">---
+#include &lt;iostream&gt;
+#include &lt;opencv2/opencv.hpp&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>using namespace cv;
+using namespace std;</p>
+</div>
+<div class="paragraph">
+<p>int main(int argc, char** argv){
+  Mat image,newimage;
+  int xi,yi,xf,yf;
+  image = imread(argv[1],CV_LOAD_IMAGE_GRAYSCALE);
+  xi = strtol(argv[2], NULL, 10);
+  yi = strtol(argv[3], NULL, 10);
+  xf = strtol(argv[4], NULL, 10);
+  yf = strtol(argv[5], NULL, 10);
+  for(int i=xi;i&lt;xf;i){
+    for(int j=yi;j&lt;yf;j){
+      image.at&lt;uchar&gt;(i,j)= 255 - image.at&lt;uchar&gt;(i,j);
+    }
+  }
+  imshow("image", image);
+  waitKey();
+  return 0;
+}
+---</p>
+</div>
+<div class="paragraph">
+<p>blabla</p>
+</div>
+<div id="fig_imagem" class="imageblock text-center">
+<div class="content">
+<img src="figures/imagem.jpeg" alt="imagem original">
+</div>
+<div class="title">Figure 1. imagem original</div>
 </div>
 </div>
 </div>
@@ -458,7 +485,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2018-03-26 13:14:36 -03
+Last updated 2018-03-26 13:47:59 -03
 </div>
 </div>
 </body>
