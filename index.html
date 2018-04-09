@@ -427,18 +427,14 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 </div>
 <div id="content">
-<div id="preamble">
-<div class="sectionbody">
-<div class="paragraph">
-<p>An introduction to <a href="http://asciidoc.org">AsciiDoc</a>.</p>
-</div>
-</div>
-</div>
 <div class="sect1">
 <h2 id="_unidade_1">Unidade 1</h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_regions">regions</h3>
+<h3 id="_2_2_regions">2.2 - Regions</h3>
+<div class="paragraph">
+<p>Após compilado, para executar o programa, basta executar da seguinte forma "./img x0 y0 xf yf" onde "img" é a imagem que se queira trabalhar, x0 e y0 são os pontos iniciais de onde o negativo vai começar a passar e xf e yf os finais</p>
+</div>
 <div id="exa_regions" class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-cpp" data-lang="cpp">#include &lt;iostream&gt;
@@ -464,96 +460,183 @@ int main(int argc, char** argv){
 }</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>versao2</p>
-</div>
-<div id="exa_facedetect" class="listingblock">
+<div id="fig_regions" class="imageblock text-center">
 <div class="content">
-<pre class="highlight"><code class="language-cpp" data-lang="cpp">#include "opencv2/objdetect.hpp"
-#include "opencv2/highgui.hpp"
-#include "opencv2/imgproc.hpp"
-#include &lt;iostream&gt;
+<img src="figures/regions.png" alt="regions">
+</div>
+<div class="title">Figure 1. regions.cpp</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_2_2_troca_de_regiões">2.2 Troca de Regiões</h3>
+<div id="exa_trocaregioes" class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cpp" data-lang="cpp">#include &lt;iostream&gt;
+#include &lt;opencv2/opencv.hpp&gt;
+#include &lt;opencv2/imgproc/imgproc.hpp&gt;
 
-#include &lt;stdio.h&gt;
-using namespace std;
+
 using namespace cv;
-void detectAndDisplay( Mat frame );
-String face_cascade_name, eyes_cascade_name;
-CascadeClassifier face_cascade;
-CascadeClassifier eyes_cascade;
-String window_name = "Capture - Face detection";
-int main( int argc, const char** argv )
-{
-    CommandLineParser parser(argc, argv,
-        "{help h||}"
-        "{face_cascade| haarcascade_frontalface_alt.xml|}"
-        "{eyes_cascade| haarcascade_eye.xml|}");
-    parser.about( "\nThis program demonstrates using the cv::CascadeClassifier class to detect objects (Face + eyes) in a video stream.\n"
-                  "You can use Haar or LBP features.\n\n" );
-    parser.printMessage();
-    face_cascade_name = parser.get&lt;String&gt;("face_cascade");
-    eyes_cascade_name = parser.get&lt;String&gt;("eyes_cascade");
-    //-- 1. Load the cascades
-    if( !face_cascade.load( face_cascade_name ) ){ printf("--(!)Error loading face cascade\n"); return -1; };
-    if( !eyes_cascade.load( eyes_cascade_name ) ){ printf("--(!)Error loading eyes cascade\n"); return -1; };
-    //-- 2. Read the video stream
-    Mat image;
-    std::vector&lt;Rect&gt; faces;
-    image = imread(argv[1],CV_LOAD_IMAGE_GRAYSCALE);
-    face_cascade.detectMultiScale( image, faces, 1.1, 2, 0|CASCADE_SCALE_IMAGE, Size(60, 60) );
-    cout &lt;&lt; faces[0] &lt;&lt; endl;
-    for ( size_t i = 0; i &lt; faces.size(); i++ )
-    {
-        Point center( faces[i].x + faces[i].width/2, faces[i].y + faces[i].height/2 );
-        ellipse( image, center, Size( faces[i].width/2, faces[i].height/2 ), 0, 0, 360, Scalar( 255, 0, 255 ), 4, 8, 0 );
-        Mat faceROI = image( faces[i] );
-        std::vector&lt;Rect&gt; eyes;
-        //-- In each face, detect eyes
-        eyes_cascade.detectMultiScale( faceROI, eyes, 1.1, 2, 0 |CASCADE_SCALE_IMAGE, Size(30, 30) );
-        for ( size_t j = 0; j &lt; eyes.size(); j++ )
-        {
-            Point eye_center( faces[i].x + eyes[j].x + eyes[j].width/2, faces[i].y + eyes[j].y + eyes[j].height/2 );
-            int radius = cvRound( (eyes[j].width + eyes[j].height)*0.25 );
-            circle( image, eye_center, radius, Scalar( 255, 0, 0 ), 4, 8, 0 );
-        }
-    }
-    imshow("image", image);
-	waitKey();
-    return 0;
-}
-void detectAndDisplay( Mat frame )
-{
-    std::vector&lt;Rect&gt; faces;
-    Mat frame_gray;
-    cvtColor( frame, frame_gray, COLOR_BGR2GRAY );
-    equalizeHist( frame_gray, frame_gray );
-    //-- Detect faces
-    face_cascade.detectMultiScale( frame_gray, faces, 1.1, 2, 0|CASCADE_SCALE_IMAGE, Size(60, 60) );
-    for ( size_t i = 0; i &lt; faces.size(); i++ )
-    {
-        Point center( faces[i].x + faces[i].width/2, faces[i].y + faces[i].height/2 );
-        ellipse( frame, center, Size( faces[i].width/2, faces[i].height/2 ), 0, 0, 360, Scalar( 255, 0, 255 ), 4, 8, 0 );
-        Mat faceROI = frame_gray( faces[i] );
-        std::vector&lt;Rect&gt; eyes;
-        //-- In each face, detect eyes
-        eyes_cascade.detectMultiScale( faceROI, eyes, 1.1, 2, 0 |CASCADE_SCALE_IMAGE, Size(30, 30) );
-        for ( size_t j = 0; j &lt; eyes.size(); j++ )
-        {
-            Point eye_center( faces[i].x + eyes[j].x + eyes[j].width/2, faces[i].y + eyes[j].y + eyes[j].height/2 );
-            int radius = cvRound( (eyes[j].width + eyes[j].height)*0.25 );
-            circle( frame, eye_center, radius, Scalar( 255, 0, 0 ), 4, 8, 0 );
-        }
-    }
-    //-- Show what you got
-    imshow( window_name, frame );
+using namespace std;
+
+int main(int argc, char** argv){
+  //Imagem Recebida
+  Mat image;
+  image = imread(argv[1],CV_LOAD_IMAGE_GRAYSCALE);
+  imshow("image", image);
+  waitKey();
+  // Nova imagem
+  Mat newimage;
+  newimage = image.clone();
+  // se a imagem tiver tamanho impar, recorta a regiao para
+  // evitar cópias de tamanho desigual
+  newimage = newimage(Rect(0, 0, image.cols &amp; -2, image.rows &amp; -2));
+  int width = newimage.size().width/2;
+  int height = newimage.size().height/2;
+  // Pegando os Quadrantes Separadamente
+  Mat A, B, C, D;
+  A = image(Rect(0,0,height,width));
+  B = image(Rect(height,0,height,width));
+  C = image(Rect(0,width,height,width));
+  D = image(Rect(height,width,height,width));
+
+  A.copyTo(newimage(Rect(height,width,height,width))); // Quadrante 1
+  B.copyTo(newimage(Rect(0,width,height,width))); // Quadrante 2
+  C.copyTo(newimage(Rect(height,0,height,width))); // Quadrante 3
+  D.copyTo(newimage(Rect(0,0,height,width))); // Quadrante 4
+  imshow("trocaregioes", newimage);
+  waitKey();
+  cvDestroyAllWindows();
+  return 0;
 }</code></pre>
 </div>
 </div>
-<div id="fig_imagem" class="imageblock text-center">
+<div id="fig_trocaregioes" class="imageblock text-center">
 <div class="content">
-<img src="figures/imagem.jpeg" alt="imagem original">
+<img src="figures/trocaregioes.png" alt="trocaregioes">
 </div>
-<div class="title">Figure 1. imagem original</div>
+<div class="title">Figure 2. trocaregioes.cpp</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_3_2_mais_de_255_objetos">3.2 Mais de 255 objetos</h3>
+<div id="exa_3.2-1" class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cpp" data-lang="cpp">  for(int i=0; i&lt;height; i++){
+    for(int j=0; j&lt;width; j++){
+      if(image.at&lt;uchar&gt;(i,j) == 255){
+		// achou um objeto
+		nobjects++;
+		p.x=j;
+		p.y=i;
+		floodFill(image,p,nobjects);
+		if(nobjects&gt;= 255){
+			nobjects = 0;
+		}
+	  }
+	}
+  }</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_3_2_regiões_com_ou_sem_buracos_internos">3.2 Regiões com ou sem buracos internos</h3>
+<div id="exa_labeling" class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cpp" data-lang="cpp">#include &lt;iostream&gt;
+#include &lt;opencv2/opencv.hpp&gt;
+
+using namespace cv;
+
+int main(int argc, char** argv){
+  Mat image, mask;
+  int width, height;
+  int nobjects,nobjectswithholes;
+
+  CvPoint p;
+  p.x=0;
+  p.y=0;
+  image = imread(argv[1],CV_LOAD_IMAGE_GRAYSCALE);
+
+  if(!image.data){
+    std::cout &lt;&lt; "imagem nao carregou corretamente\n";
+    return(-1);
+  }
+  width=image.size().width;
+  height=image.size().height;
+  // Retirando objetos ligados a borda
+  for(int i=0; i&lt;height; i++) {
+	if(image.at&lt;uchar&gt;(i,0)==255){
+		p.x = 0, p.y = i;
+        }
+	if(image.at&lt;uchar&gt;(i,width-1)==255){
+		p.x = width - 1; p.y = i;
+	}
+
+	floodFill(image,p,0);
+  }
+  for(int j=0; j&lt;width; j++) {
+	if(image.at&lt;uchar&gt;(0,j)==255){
+		p.x = j, p.y = 0;
+        }
+	if(image.at&lt;uchar&gt;(height-1,j)==255){
+		p.x = j; p.y = height-1;
+	}
+	floodFill(image,p,0);
+  }
+  //Atribuindo um tom de cinza para a cor de fundo
+  p.x = 0; p.y = 0;
+  floodFill(image,p,127);
+   //
+   imshow("Bordas Eliminadas", image);
+
+  // busca de objetos
+  nobjects=0;
+  for(int i=0; i&lt;height; i++){
+    for(int j=0; j&lt;width; j++){
+      if(image.at&lt;uchar&gt;(i,j) == 255){
+		nobjects++;
+		p.x = j; p.y = i;
+		floodFill(image,p,254);
+	  }
+	}
+  }
+  //Busca de Objetos com Buracos
+  nobjectswithholes=0;
+  for(int i=0; i&lt;height; i++){
+    for(int j=0; j&lt;width; j++){
+      if((image.at&lt;uchar&gt;(i,j) == 254) and (image.at&lt;uchar&gt;(i,j+1) == 0)){
+		nobjectswithholes++;
+		p.x = j+1; p.y = i;
+		floodFill(image,p,253);
+	  }
+	}
+  }
+  //Filtrando os buracos
+  nobjectswithholes=0;
+  for(int i=0; i&lt;height; i++){
+    for(int j=0; j&lt;width; j++){
+      if((image.at&lt;uchar&gt;(i,j) == 254)){
+		nobjectswithholes++;
+		p.x = j; p.y = i;
+		floodFill(image,p,127);
+	  }
+	}
+  }
+  std::cout &lt;&lt; nobjects &lt;&lt; "\n";
+  std::cout &lt;&lt; nobjectswithholes &lt;&lt; "\n";
+  imshow("Buracos", image);
+  imwrite("labeling.png", image);
+  waitKey();
+  return 0;
+}</code></pre>
+</div>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="figures/labeling.png" alt="labeling">
+</div>
+<div class="title">Figure 3. labeling.cpp</div>
 </div>
 </div>
 </div>
@@ -561,7 +644,7 @@ void detectAndDisplay( Mat frame )
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2018-03-26 14:02:41 -03
+Last updated 2018-04-09 09:49:03 -03
 </div>
 </div>
 </body>
