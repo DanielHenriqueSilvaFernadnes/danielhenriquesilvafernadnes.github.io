@@ -613,18 +613,16 @@ int main(int argc, char** argv){
 	}
   }
   //Filtrando os buracos
-  nobjectswithholes=0;
   for(int i=0; i&lt;height; i++){
     for(int j=0; j&lt;width; j++){
       if((image.at&lt;uchar&gt;(i,j) == 254)){
-		nobjectswithholes++;
 		p.x = j; p.y = i;
 		floodFill(image,p,127);
 	  }
 	}
   }
-  std::cout &lt;&lt; nobjects &lt;&lt; "\n";
-  std::cout &lt;&lt; nobjectswithholes &lt;&lt; "\n";
+  std::cout &lt;&lt; "Numero de Objetos: " &lt;&lt; nobjects &lt;&lt; "\n";
+  std::cout &lt;&lt; "Objetos com Buracos: " &lt;&lt; nobjectswithholes &lt;&lt; "\n";
   imshow("Buracos", image);
   imwrite("labeling.png", image);
   waitKey();
@@ -639,12 +637,217 @@ int main(int argc, char** argv){
 <div class="title">Figure 3. labeling.cpp</div>
 </div>
 </div>
+<div class="sect2">
+<h3 id="_4_2_equalize">4.2 Equalize</h3>
+<div id="exa_equalize" class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cpp" data-lang="cpp">#include &lt;iostream&gt;
+#include &lt;opencv2/opencv.hpp&gt;
+
+using namespace cv;
+using namespace std;
+
+int main(int argc, char** argv){
+  Mat image,grayimage,equalizedgrayimage;
+  int width, height;
+  VideoCapture cap;
+  vector&lt;Mat&gt; planes,planesgray;
+  Mat histgray,histequalizegrayimage,hist1,hist2;
+  int nbins = 64;
+  float range[] = {0, 256};
+  const float *histrange = { range };
+  bool uniform = true;
+  bool acummulate = false;
+
+  cap.open(0);
+
+  if(!cap.isOpened()){
+    cout &lt;&lt; "cameras indisponiveis";
+    return -1;
+  }
+
+  width  = cap.get(CV_CAP_PROP_FRAME_WIDTH);
+  height = cap.get(CV_CAP_PROP_FRAME_HEIGHT);
+
+  cout &lt;&lt; "largura = " &lt;&lt; width &lt;&lt; endl;
+  cout &lt;&lt; "altura  = " &lt;&lt; height &lt;&lt; endl;
+
+  int histw = nbins, histh = nbins/2;
+  Mat histImgGray(histh, histw, CV_8UC1, Scalar(0));
+  Mat histImgEquaGray(histh, histw, CV_8UC1, Scalar(0));
+
+  while(1){
+	// Capturando a imagem
+    cap &gt;&gt; image;
+    // Convertendo a imagem em Cinza
+    cvtColor(image,grayimage,CV_BGR2GRAY);
+    // Equalizando imagem
+    equalizeHist(grayimage,equalizedgrayimage);
+    // Calculando os histogramas
+    calcHist(&amp;grayimage, 1, 0, Mat(), hist1, 1,
+             &amp;nbins, &amp;histrange,
+             uniform, acummulate);
+    calcHist(&amp;equalizedgrayimage, 1, 0, Mat(), hist2, 1,
+             &amp;nbins, &amp;histrange,
+             uniform, acummulate);
+    // Normalizando
+    normalize(hist1, hist1, 0, histImgGray.rows, NORM_MINMAX, -1, Mat());
+    normalize(hist2, hist2, 0, histImgEquaGray.rows, NORM_MINMAX, -1, Mat());
+    histImgGray.setTo(Scalar(0));
+    histImgEquaGray.setTo(Scalar(0));
+    //
+    for(int i=0; i&lt;nbins; i++){
+      line(histImgGray,
+           Point(i, histh),
+           Point(i, histh-cvRound(hist1.at&lt;float&gt;(i))),
+           Scalar(255, 255, 255), 1, 8, 0);
+      line(histImgEquaGray,
+           Point(i, histh),
+           Point(i, histh-cvRound(hist2.at&lt;float&gt;(i))),
+           Scalar(255, 255, 255), 1, 8, 0);
+    }
+    histImgGray.copyTo(grayimage(Rect(0, 0, nbins, histh)));
+    histImgGray.copyTo(grayimage(Rect(0, 0, nbins, histh)));
+    histImgEquaGray.copyTo(equalizedgrayimage(Rect(0, histh, nbins, histh)));
+
+    //Mostrando Imagens
+    imshow("Imagem Cinza", grayimage);
+    imshow("Imagem Cinza Equalizada", equalizedgrayimage);
+    if(waitKey(30) &gt;= 0) break;
+  }
+  return 0;
+}</code></pre>
+</div>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="figures/equalize.png" alt="labeling">
+</div>
+<div class="title">Figure 4. equalize.cpp</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_4_2_motion_detector">4.2 Motion Detector</h3>
+<div id="exa_motiondetector" class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cpp" data-lang="cpp">#include &lt;iostream&gt;
+#include &lt;opencv2/opencv.hpp&gt;
+
+using namespace cv;
+using namespace std;
+
+int main(int argc, char** argv){
+  Mat image, previousimage;
+  int width, height;
+  VideoCapture cap;
+  vector&lt;Mat&gt; planes,previousplanes;
+  Mat histR, histG, histB,histPreviousR;
+  int nbins = 64;
+  float range[] = {0, 256};
+  const float *histrange = { range };
+  bool uniform = true;
+  bool acummulate = false;
+  double comparador;
+  cap.open(0);
+
+  if(!cap.isOpened()){
+    cout &lt;&lt; "cameras indisponiveis";
+    return -1;
+  }
+
+  width  = cap.get(CV_CAP_PROP_FRAME_WIDTH);
+  height = cap.get(CV_CAP_PROP_FRAME_HEIGHT);
+
+  cout &lt;&lt; "largura = " &lt;&lt; width &lt;&lt; endl;
+  cout &lt;&lt; "altura  = " &lt;&lt; height &lt;&lt; endl;
+
+  int histw = nbins, histh = nbins/2;
+  Mat histImgR(histh, histw, CV_8UC3, Scalar(0,0,0));
+  Mat histImgPreviousR(histh, histw, CV_8UC3, Scalar(0,0,0));
+  Mat histImgG(histh, histw, CV_8UC3, Scalar(0,0,0));
+  Mat histImgB(histh, histw, CV_8UC3, Scalar(0,0,0));
+
+  cap &gt;&gt; previousimage;
+  //Histograma previo
+  MatND hist_previous;
+  MatND hist_foward;
+  split (previousimage, previousplanes);
+  calcHist(&amp;previousplanes[0], 1, 0, Mat(), hist_previous, 1,
+             &amp;nbins, &amp;histrange,
+             uniform, acummulate);
+  normalize(hist_previous, hist_previous, 0, 1, NORM_MINMAX, -1, Mat());
+  //
+
+  histImgPreviousR.setTo(Scalar(0));
+  while(1){
+    cap &gt;&gt; image;
+    split (image, planes);
+    calcHist(&amp;planes[0], 1, 0, Mat(), histR, 1,
+             &amp;nbins, &amp;histrange,
+             uniform, acummulate);
+    calcHist(&amp;planes[0], 1, 0, Mat(), hist_foward, 1,
+             &amp;nbins, &amp;histrange,
+             uniform, acummulate);
+    calcHist(&amp;planes[1], 1, 0, Mat(), histG, 1,
+             &amp;nbins, &amp;histrange,
+             uniform, acummulate);
+    calcHist(&amp;planes[2], 1, 0, Mat(), histB, 1,
+             &amp;nbins, &amp;histrange,
+             uniform, acummulate);
+
+    normalize(histR, histR, 0, histImgR.rows, NORM_MINMAX, -1, Mat());
+    normalize(histG, histG, 0, histImgG.rows, NORM_MINMAX, -1, Mat());
+    normalize(histB, histB, 0, histImgB.rows, NORM_MINMAX, -1, Mat());
+    normalize(hist_foward, hist_foward, 0, 1, NORM_MINMAX, -1, Mat());
+
+    histImgR.setTo(Scalar(0));
+    histImgG.setTo(Scalar(0));
+    histImgB.setTo(Scalar(0));
+
+    comparador = compareHist( hist_previous, hist_foward, 2 );
+
+    for(int i=0; i&lt;nbins; i++){
+      line(histImgR,
+           Point(i, histh),
+           Point(i, histh-cvRound(histR.at&lt;float&gt;(i))),
+           Scalar(0, 0, 255), 1, 8, 0);
+      line(histImgG,
+           Point(i, histh),
+           Point(i, histh-cvRound(histG.at&lt;float&gt;(i))),
+           Scalar(0, 255, 0), 1, 8, 0);
+      line(histImgB,
+           Point(i, histh),
+           Point(i, histh-cvRound(histB.at&lt;float&gt;(i))),
+           Scalar(255, 0, 0), 1, 8, 0);
+    }
+    histImgR.copyTo(image(Rect(0, 0       ,nbins, histh)));
+    histImgG.copyTo(image(Rect(0, histh   ,nbins, histh)));
+    histImgB.copyTo(image(Rect(0, 2*histh ,nbins, histh)));
+    imshow("image", image);
+    hist_previous = hist_foward;
+    if(comparador &gt; 9){
+		cout &lt;&lt; "mexeu" &lt;&lt; "\n";
+		}
+
+    if(waitKey(30) &gt;= 0) break;
+  }
+  return 0;
+}</code></pre>
+</div>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="figures/motiondetector.png" alt="motiondetector">
+</div>
+<div class="title">Figure 5. motiondetector.cpp</div>
+</div>
+</div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2018-04-09 09:49:03 -03
+Last updated 2018-04-11 18:25:29 -03
 </div>
 </div>
 </body>
