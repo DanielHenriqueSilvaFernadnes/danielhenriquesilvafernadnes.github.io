@@ -990,12 +990,13 @@ int main(int argvc, char** argv){
 </div>
 </div>
 <div class="sect1">
-<h2 id="_unidade_1_2">Unidade 1</h2>
+<h2 id="_unidade_2">Unidade 2</h2>
 <div class="sectionbody">
 <div class="sect2">
 <h3 id="_homomorfico_cpp">Homomorfico.cpp</h3>
 <div class="paragraph">
-<p>De Modo a facilitar o entendimento do código, resolvi aplicar o filtro em uma imagem</p>
+<p>De Modo a facilitar o entendimento do código, resolvi aplicar o filtro em uma imagem fixa, de modo que o parâmetro de iluminação pudesse ficar fixo, restando apenas para o programador escolher o valor das variáveis.
+A saída do programa mostrado na Figura 7 apresenta a imagem original, a imagem apos passar pelo filtro homomórfico e a máscara que aplicou a transformação. Lembrando que essa mascara não é um binário de 1 ou 0, e sim de diversos valores reais. O fato de parecer um filtro se da apenas devido a normalização feita para demonstrar para o usuário.</p>
 </div>
 <div id="exa_homomorfico" class="listingblock">
 <div class="content">
@@ -1138,12 +1139,205 @@ int main(int , char**){
 <div class="title">Figure 7. Homomorfico.cpp</div>
 </div>
 </div>
+<div class="sect2">
+<h3 id="_homomorfico_cpp_2">Homomorfico.cpp</h3>
+<div class="paragraph">
+<p>Como forma de demonstrar o passa a passo do algoritmo cannypoints, resolvi mostrar o progresso de modificação da imagem conforme se aplica pontilhismo nas imagens após passarem pelo filtro de Canny no loop. A Figura 8 mostra as 5 etapas que o algoritmo passou para a imagem biel.png</p>
+</div>
+<div id="exa_cannypoints" class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cpp" data-lang="cpp">#include &lt;iostream&gt;
+#include &lt;opencv2/opencv.hpp&gt;
+#include &lt;fstream&gt;
+#include &lt;iomanip&gt;
+#include &lt;vector&gt;
+#include &lt;algorithm&gt;
+#include &lt;numeric&gt;
+#include &lt;ctime&gt;
+#include &lt;cstdlib&gt;
+
+using namespace std;
+using namespace cv;
+
+#define STEP 5
+#define JITTER 3
+#define RAIO 3
+
+int main(int argc, char** argv){
+  vector&lt;int&gt; yrange;
+  vector&lt;int&gt; xrange;
+
+  Mat image, frame, points;
+
+  int width, height, gray;
+  int x, y;
+
+  image= imread(argv[1],CV_LOAD_IMAGE_GRAYSCALE);
+
+  srand(time(0));
+
+  if(!image.data){
+	cout &lt;&lt; "nao abriu" &lt;&lt; argv[1] &lt;&lt; endl;
+    cout &lt;&lt; argv[0] &lt;&lt; " imagem.jpg";
+    exit(0);
+  }
+
+  width=image.size().width;
+  height=image.size().height;
+
+  xrange.resize(height/STEP);
+  yrange.resize(width/STEP);
+
+  iota(xrange.begin(), xrange.end(), 0);
+  iota(yrange.begin(), yrange.end(), 0);
+
+  for(uint i=0; i&lt;xrange.size(); i++){
+    xrange[i]= xrange[i]*STEP+STEP/2;
+  }
+
+  for(uint i=0; i&lt;yrange.size(); i++){
+    yrange[i]= yrange[i]*STEP+STEP/2;
+  }
+
+  points = Mat(height, width, CV_8U, Scalar(255));
+
+  random_shuffle(xrange.begin(), xrange.end());
+
+  for(auto i : xrange){
+    random_shuffle(yrange.begin(), yrange.end());
+    for(auto j : yrange){
+      x = i+rand()%(2*JITTER)-JITTER+1;
+      y = j+rand()%(2*JITTER)-JITTER+1;
+      gray = image.at&lt;uchar&gt;(x,y);
+      circle(points,
+             cv::Point(y,x),
+             RAIO,
+             CV_RGB(gray,gray,gray),
+             -1,
+             CV_AA);
+    }
+  }
+  imshow("pontos.jpg", points);
+
+  // Todo o codigo acima foi retirado do algoritmo pontilhismo.cpp
+  Mat canny_image;
+  int raio;
+  int min,max;
+  String Etapas[5] = {"Canny - 0","Canny - 1","Canny - 2","Canny - 3","Canny - 4"};
+  String Pontos[5] = {"Points - 0","Points - 1","Points - 2","Points - 3","Points - 4"};
+  Mat canny_vectors[5];
+  Mat Pontos_passo[5];
+  int n_passo = 5;
+  for(int i=0; i&lt;n_passo; i++){
+     raio = 5-i;
+     min = 10*i;
+     max = 2*min;
+	 Canny(image, canny_image, min, max);
+     for(int j=0; j&lt;height; j++ ){
+        for(int k=0; k&lt;width; k++){
+           if(canny_image.at&lt;uchar&gt;(j,k)&gt;0){
+              gray = image.at&lt;uchar&gt;(j,k);
+              circle(points, cv::Point(k,j), raio, CV_RGB(gray, gray, gray), -1, CV_AA);
+
+           }
+        }
+     }
+     canny_vectors[i] = canny_image.clone();
+     Pontos_passo[i] = points.clone();
+     imshow(Pontos[i],Pontos_passo[i]);
+     imshow(Etapas[i],canny_vectors[i]);
+  }
+
+
+  waitKey(0);
+  return 0;
+}</code></pre>
+</div>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="figures/Saida_Canny_Pontilhismo.png" alt="Saida_Canny_Pontilhismo">
+</div>
+<div class="title">Figure 8. cannypoints.cpp</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_kmeans_cpp">kmeans.cpp</h3>
+<div class="paragraph">
+<p>Feito as devidas modificações no código original kmeans.cpp disponibilizado, é possível verificar algumas mudanças nas imagens finais, sendo essas mudanças mais acentuadas nas regiões de transição de cores.
+O que se constatou é que, devido ao parâmetro KMEANS_RANDOM_CENTERS, o algoritmo pode ter passado pelo chamado "Random Initialization Trap", que é um fenômeno que ocorre quando os pontos de inicialização são distribuídos de forma que a convergência dos pontos se dê em locais pouco estratégicos, o que conforme a convergência ocorre, tendem a alocar os centros em regiões em que a classificação não é tao adequada quanto  deveria.</p>
+</div>
+<div id="exa_kmeans" class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cpp" data-lang="cpp">#include &lt;opencv2/opencv.hpp&gt;
+#include &lt;cstdlib&gt;
+
+using namespace cv;
+
+int main( int argc, char** argv ){
+  int nClusters = 6;
+  Mat rotulos;
+  int nRodadas = 10;
+  Mat centros;
+
+  if(argc!=3){
+	exit(0);
+  }
+
+  Mat img = imread( argv[1], CV_LOAD_IMAGE_COLOR);
+  Mat samples(img.rows * img.cols, 3, CV_32F);
+
+  for( int y = 0; y &lt; img.rows; y++ ){
+    for( int x = 0; x &lt; img.cols; x++ ){
+      for( int z = 0; z &lt; 3; z++){
+        samples.at&lt;float&gt;(y + x*img.rows, z) = img.at&lt;Vec3b&gt;(y,x)[z];
+	  }
+	}
+  }
+
+  kmeans(samples,
+		 nClusters,
+		 rotulos,
+		 TermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS, 10000, 0.0001),
+		 nRodadas,
+		 KMEANS_RANDOM_CENTERS,
+		 centros );
+
+
+  Mat rotulada( img.size(), img.type() );
+  for( int y = 0; y &lt; img.rows; y++ ){
+    for( int x = 0; x &lt; img.cols; x++ ){
+	  int indice = rotulos.at&lt;int&gt;(y + x*img.rows,0);
+	  rotulada.at&lt;Vec3b&gt;(y,x)[0] = (uchar) centros.at&lt;float&gt;(indice, 0);
+	  rotulada.at&lt;Vec3b&gt;(y,x)[1] = (uchar) centros.at&lt;float&gt;(indice, 1);
+	  rotulada.at&lt;Vec3b&gt;(y,x)[2] = (uchar) centros.at&lt;float&gt;(indice, 2);
+	}
+  }
+  imshow( "clustered image", rotulada );
+  imwrite(argv[2], rotulada);
+  waitKey( 0 );
+}</code></pre>
+</div>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="figures/nRodadas=1.jpg" alt="nRodadas=1">
+</div>
+<div class="title">Figure 9. nRodadas=1.jpg</div>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="figures/nRodadas=10.jpg" alt="nRodadas=10">
+</div>
+<div class="title">Figure 10. nRodadas=10.jpg</div>
+</div>
+</div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2018-05-18 17:43:47 -03
+Last updated 2018-05-19 17:12:30 -03
 </div>
 </div>
 </body>
