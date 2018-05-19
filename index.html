@@ -842,12 +842,308 @@ int main(int argc, char** argv){
 <div class="title">Figure 5. motiondetector.cpp</div>
 </div>
 </div>
+<div class="sect2">
+<h3 id="_5_2_laplaciano_do_gaussiano">5.2 Laplaciano do Gaussiano</h3>
+<div id="exa_lapgauss" class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cpp" data-lang="cpp">#include &lt;iostream&gt;
+#include &lt;opencv2/opencv.hpp&gt;
+
+using namespace cv;
+using namespace std;
+
+void printmask(Mat &amp;m){
+  for(int i=0; i&lt;m.size().height; i++){
+    for(int j=0; j&lt;m.size().width; j++){
+      cout &lt;&lt; m.at&lt;float&gt;(i,j) &lt;&lt; ",";
+    }
+    cout &lt;&lt; endl;
+  }
+}
+
+void menu(){
+  cout &lt;&lt; "\npressione a tecla para ativar o filtro: \n"
+	"a - calcular modulo\n"
+    "m - media\n"
+    "g - gauss\n"
+    "v - vertical\n"
+	"h - horizontal\n"
+    "l - laplaciano\n"
+    "J - laplaciano do Gaussiano\n"
+	"esc - sair\n";
+}
+
+int main(int argvc, char** argv){
+  VideoCapture video;
+  float media[] = {1,1,1,
+				   1,1,1,
+				   1,1,1};
+  float gauss[] = {1,2,1,
+				   2,4,2,
+				   1,2,1};
+  float horizontal[]={-1,0,1,
+					  -2,0,2,
+					  -1,0,1};
+  float vertical[]={-1,-2,-1,
+					0,0,0,
+					1,2,1};
+  float laplacian[]={0,-1,0,
+					 -1,4,-1,
+					 0,-1,0};
+  float laplaciano_gaussiano[]={0,0,-1,0,0,
+					0,-1,-2,-1,0,
+					-1,-2,16,-2,-1,
+					0,-1,-2,-1,0,
+					0,0,-1,0,0};
+
+  Mat cap, frame, frame32f, frameFiltered;
+  Mat mask(3,3,CV_32F), mask1;
+  Mat result, result1;
+  double width, height;
+  int absolut;
+  char key;
+
+  video.open(0);
+  if(!video.isOpened())
+    return -1;
+  width=video.get(CV_CAP_PROP_FRAME_WIDTH);
+  height=video.get(CV_CAP_PROP_FRAME_HEIGHT);
+  std::cout &lt;&lt; "largura=" &lt;&lt; width &lt;&lt; "\n";;
+  std::cout &lt;&lt; "altura =" &lt;&lt; height&lt;&lt; "\n";;
+
+  namedWindow("filtroespacial",1);
+
+  mask = Mat(3, 3, CV_32F, media);
+  scaleAdd(mask, 1/9.0, Mat::zeros(3,3,CV_32F), mask1);
+  swap(mask, mask1);
+  absolut=1; // calcs abs of the image
+
+  menu();
+  for(;;){
+    video &gt;&gt; cap;
+    cvtColor(cap, frame, CV_BGR2GRAY);
+    flip(frame, frame, 1);
+    imshow("original", frame);
+    frame.convertTo(frame32f, CV_32F);
+    filter2D(frame32f, frameFiltered, frame32f.depth(), mask, Point(1,1), 0);
+    if(absolut){
+      frameFiltered=abs(frameFiltered);
+    }
+    frameFiltered.convertTo(result, CV_8U);
+    imshow("filtroespacial", result);
+    key = (char) waitKey(10);
+    if( key == 27 ) break; // esc pressed!
+    switch(key){
+    case 'a':
+	  menu();
+      absolut=!absolut;
+      break;
+    case 'm':
+	  menu();
+      mask = Mat(3, 3, CV_32F, media);
+      scaleAdd(mask, 1/9.0, Mat::zeros(3,3,CV_32F), mask1);
+      mask = mask1;
+      printmask(mask);
+      break;
+    case 'g':
+	  menu();
+      mask = Mat(3, 3, CV_32F, gauss);
+      scaleAdd(mask, 1/16.0, Mat::zeros(3,3,CV_32F), mask1);
+      mask = mask1;
+      printmask(mask);
+      break;
+    case 'h':
+	  menu();
+      mask = Mat(3, 3, CV_32F, horizontal);
+      printmask(mask);
+      break;
+    case 'v':
+	  menu();
+      mask = Mat(3, 3, CV_32F, vertical);
+      printmask(mask);
+      break;
+    case 'l':
+	  menu();
+      mask = Mat(3, 3, CV_32F, laplacian);
+      printmask(mask);
+      break;
+    case 'j':
+	  menu();
+      mask = Mat(5, 5, CV_32F, laplaciano_gaussiano);
+      printmask(mask);
+      break;
+    default:
+      break;
+    }
+  }
+  return 0;
+}</code></pre>
+</div>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="figures/lapgauss.png" alt="lapgauss">
+</div>
+<div class="title">Figure 6. lapgauss.cpp</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_unidade_1_2">Unidade 1</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_homomorfico_cpp">Homomorfico.cpp</h3>
+<div class="paragraph">
+<p>De Modo a facilitar o entendimento do código, resolvi aplicar o filtro em uma imagem</p>
+</div>
+<div id="exa_homomorfico" class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cpp" data-lang="cpp">#include &lt;iostream&gt;
+#include &lt;opencv2/opencv.hpp&gt;
+#include &lt;opencv2/imgproc/imgproc.hpp&gt;
+#define RADIUS 20
+using namespace cv;
+using namespace std;
+
+// troca os quadrantes da imagem da DFT
+void deslocaDFT(Mat&amp; image ){
+  Mat tmp, A, B, C, D;
+
+	// se a imagem tiver tamanho impar, recorta a regiao para
+	// evitar cópias de tamanho desigual
+
+	image = image(Rect(0, 0, image.cols &amp; -2, image.rows &amp; -2));
+    int cx = image.cols/2;
+    int cy = image.rows/2;
+
+    // reorganiza os quadrantes da transformada
+    // A B   -&gt;  D C
+    // C D       B A
+    A = image(Rect(0, 0, cx, cy));
+    B = image(Rect(cx, 0, cx, cy));
+    C = image(Rect(0, cy, cx, cy));
+    D = image(Rect(cx, cy, cx, cy));
+
+    // A &lt;-&gt; D
+    A.copyTo(tmp);  D.copyTo(A);  tmp.copyTo(D);
+
+    // C &lt;-&gt; B
+C.copyTo(tmp); B.copyTo(C); tmp.copyTo(B);
+}
+
+void filtronotch(Mat image,float y_H,float y_L,float c,float d0){
+  //Variaveis Iniciais
+  Mat imaginaryInput, complexImage, multsp;
+  Mat padded, filter, mag;
+  Mat imagegray, tmp;
+  Mat_&lt;float&gt; realInput, zeros;
+  vector&lt;Mat&gt; planos;
+
+  // valores ideais dos tamanhos da imagem
+  // para calculo da DFT
+
+  int dft_M, dft_N;
+  dft_M = getOptimalDFTSize(image.rows);
+  dft_N = getOptimalDFTSize(image.cols);
+
+  // realiza o padding da imagem
+
+  copyMakeBorder(image, padded, 0,
+                 dft_M - image.rows, 0,
+                 dft_N - image.cols,
+                 BORDER_CONSTANT, Scalar::all(0));
+  // parte imaginaria da matriz complexa (preenchida com zeros)
+
+  zeros = Mat_&lt;float&gt;::zeros(padded.size());
+
+  // prepara a matriz complexa para ser preenchida
+
+  complexImage = Mat(padded.size(), CV_32FC2, Scalar(0));
+
+  // a função de transferência (filtro frequencial) deve ter o
+  // mesmo tamanho e tipo da matriz complexa
+
+  filter = complexImage.clone();
+
+  // cria uma matriz temporária para criar as componentes real
+  // e imaginaria do filtro ideal
+  tmp = Mat(dft_M, dft_N, CV_32F);
+
+  //prepara o filtro homomorfico dinamico
+  float d;
+  for(int i=0; i&lt;dft_M; i++){
+	       for(int j=0; j&lt;dft_N; j++){
+			d = pow(pow(i - dft_M/2, 2) + pow(j - dft_N/2, 2), 0.5);
+			tmp.at&lt;float&gt;(i,j)  = (y_H - y_L)*(1 - exp(-1*c*(pow(d,2)/pow(d0,2)))) + y_L;
+	       }
+	    }
+  //
+  Mat comps[]= {tmp, tmp};
+  merge(comps, 2, filter);
+
+  // limpa o array de matrizes que vao compor a
+  // imagem complexa
+  planos.clear();
+  // cria a compoente real
+  realInput = Mat_&lt;float&gt;(padded);
+  // insere as duas componentes no array de matrizes
+  planos.push_back(realInput);
+  planos.push_back(zeros);
+  // combina o array de matrizes em uma unica
+  // componente complexa
+  merge(planos, complexImage);
+  // calcula o dft
+  dft(complexImage, complexImage);
+   // realiza a troca de quadrantes
+  deslocaDFT(complexImage);
+  // aplica o filtro frequencial
+  mulSpectrums(complexImage,filter,complexImage,0);
+  // limpa o array de planos
+  planos.clear();
+  // separa as partes real e imaginaria para modifica-las
+  split(complexImage, planos);
+  // recompoe os planos em uma unica matriz complexa
+  merge(planos, complexImage);
+   // troca novamente os quadrantes
+  deslocaDFT(complexImage);
+  // calcula a DFT inversa
+  idft(complexImage, complexImage);
+  // limpa o array de planos
+  planos.clear();
+  // separa as partes real e imaginaria da
+  // imagem filtrada
+  split(complexImage, planos);
+  normalize(planos[0], planos[0], 0, 1, CV_MINMAX);
+  //normalize(planos[0], planos[0], 255, CV_MINMAX);
+  normalize(tmp, tmp, 255, 0);
+  imshow("original", image);
+  imshow("tmp normalizado",tmp);
+  imshow("filtrada", planos[0]);
+  waitKey(0);
+	}
+
+int main(int , char**){
+  Mat image;
+  image = imread("index.jpeg", 0);
+  filtronotch(image,7.0,3.0,5.0,20.0);
+  return 0;
+}</code></pre>
+</div>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="figures/SaidaHomomorfico.png" alt="SaidaHomomorfica">
+</div>
+<div class="title">Figure 7. Homomorfico.cpp</div>
+</div>
+</div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2018-04-11 18:25:29 -03
+Last updated 2018-05-18 17:43:47 -03
 </div>
 </div>
 </body>
