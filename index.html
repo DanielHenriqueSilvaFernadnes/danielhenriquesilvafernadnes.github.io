@@ -1334,10 +1334,364 @@ int main( int argc, char** argv ){
 </div>
 </div>
 </div>
+<div class="sect1">
+<h2 id="_unidade_3_treinamento_viola_jones">Unidade 3 - Treinamento Viola-Jones</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_integrantes_do_grupo_para_o_projeto_da_unidade_3">Integrantes do Grupo para o Projeto da Unidade 3:</h3>
+<div class="paragraph">
+<p>DANIEL HENRIQUE SILVA FERNANDES</p>
+</div>
+<div class="paragraph">
+<p>LUIZ CARLOS ABBOTT GALVÃO NETO</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_pré_requisitos">Pré-requisitos</h3>
+<div class="paragraph">
+<p>OpenCV &gt; 3.0.0 instalados para as linguagens C/C++ e Python</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_objetivo">Objetivo:</h3>
+<div class="paragraph">
+<p>Mostrar as utilizações dos comandos opencv_createsamples, opencv_annotation, opencv_traincascade e opencv_visualisation para treinar o seu próprio arquivo cascade</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_descrição_dos_problemas">Descrição dos problemas:</h3>
+<div class="paragraph">
+<p>Nesse trabalho definimos dois desafios que serão:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Dado uma imagem que contenha o objeto desejado para identificar, gerar varias imagens positivas a partir dela. Essa estrategia é útil para logotipos que não variam muito sua forma. Para essa etapa, o objetivo sera o de identificar o simbolo da Coca-Cola</p>
+</li>
+<li>
+<p>Fornecer um conjunto de Imagens Positivas para treinar o cascade. Nessa etapa, o objetivo será o de identificar a palma da mão de uma pessoa</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_encontrando_o_simbolo_da_coca_cola">Encontrando o Simbolo da Coca-Cola</h3>
+<div class="paragraph">
+<p>A imagem tomada como base para é mostrada na Figura 11</p>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="exemplos/Unidade3/coke.jpg" alt="Coca-Cola">
+</div>
+<div class="title">Figure 11. Imagem Base</div>
+</div>
+<div class="paragraph">
+<p>Em seguida, selecionamos só a área de interesse usando o algoritmo selectarea.cpp</p>
+</div>
+<div id="exa_selectarea" class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cpp" data-lang="cpp">#include &lt;opencv2/opencv.hpp&gt;
+using namespace std;
+using namespace cv;
+int main (int argc, char **argv)
+{
+    // Read image
+    Mat im = imread(argv[1],CV_LOAD_IMAGE_COLOR);
+    // Select ROI
+    Rect2d r = selectROI(im);
+    cout &lt;&lt; r &lt;&lt; endl;
+    // Crop image
+    Mat imCrop = im(r);
+    // Display Cropped Image
+    imshow("Image", imCrop);
+    imwrite(argv[2],imCrop);
+    waitKey(0);
+    return 0;
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Após selecionar nossa região de interesse, nossa imagem ficou como mostrada a seguir:</p>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="exemplos/Unidade3/coke-resize.jpg" alt="ResizeCoca-Cola.jpg">
+</div>
+<div class="title">Figure 12. Coca-Cola_resize.jpg</div>
+</div>
+<div class="paragraph">
+<p>Apesar de termos cortado a imagem original, nossa região de interesse ainda gerou uma imagem com muitos pixeis (1246,402). Com isso com intuito de simplificar o processo de criação do nosso próprio cascade, diminuímos 90% e convertemos a imagem para tons de cinza. Para isso, usamos o código ResizePositive.py mostrado a seguir</p>
+</div>
+<div id="exa_FindCoke" class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-python" data-lang="python">import cv2
+gray = cv2.imread("coke-resize.jpg",0)
+gray = cv2.resize(gray,(125,40))
+cv2.imwrite("coke-gray.jpg",gray)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Com isso, nossa imagem base final para o cascade ficou como:</p>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="exemplos/Unidade3/coke-gray.jpg" alt="coke-gray.jpg">
+</div>
+<div class="title">Figure 13. imagem Base</div>
+</div>
+<div class="sect3">
+<h4 id="_adquirindo_imagens_negativas">Adquirindo imagens Negativas</h4>
+<div class="paragraph">
+<p>Para que se possa treinar o cascade usando uma imagem como base, é necessário um conjunto de imagens negativas, tanto para mostrar ao algoritmo o que não procurar, quanto para inserir a figura nessas imagens.
+As figuras usadas como negativas foram obtidas através do link:
+<a href="http://host.robots.ox.ac.uk/pascal/VOC/voc2007/">http://host.robots.ox.ac.uk/pascal/VOC/voc2007/</a></p>
+</div>
+<div class="paragraph">
+<p>Esse banco de imagens foi armazenado em uma pasta intitulada "Negatives", o passo seguindo foi criar um arquivo "bg.txt" que contivesse um caminho para todas essas imagens. Para criar o arquivo "bg.txt", usamos o algoritmo CountNegatives.py, que além de criar o arquivo, redimensionou as imagens para 4 vezes a imagem base e as pôs tom de cinza</p>
+</div>
+<div id="exa_CountNegatives" class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-python" data-lang="python">import os
+import cv2
+
+f = open("bg.txt","w")
+for x in os.listdir("Negatives"):
+    gray = cv2.imread("Negatives/"+x,0)
+    gray = cv2.resize(gray,(500,160))
+    cv2.imwrite("Negatives/"+x,gray)
+    f.write("Negatives/"+x+"\n")
+f.close()</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Nosso arquivo bg.txt fica como
+.bg.txt</p>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Negatives/009720.jpg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Negatives/006461.jpg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Negatives/006141.jpg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Negatives/004673.jpg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Negatives/006978.jpg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Negatives/005272.jpg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Negatives/001750.jpg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Negatives/003532.jpg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_gerando_imagens_positivas_com_base_nas_negativas">Gerando Imagens Positivas com Base nas Negativas</h4>
+<div class="paragraph">
+<p>O comando opencv_createsamples permite criar um conjunto de imagens positivas tomando como base o banco de imagens negativas. Além dele uma serie de parâmetros devem ser levados em consideração, tais como:</p>
+</div>
+<div class="paragraph">
+<p>Onde:</p>
+</div>
+<div class="paragraph">
+<p>-img: Imagem de referência</p>
+</div>
+<div class="paragraph">
+<p>-bg: Listagem da Localização do conjunto de imagem negativas</p>
+</div>
+<div class="paragraph">
+<p>-info: Localização de onde estarão as novas imagens, juntamente do arquivo .dat, que referenciará as imagens positivas</p>
+</div>
+<div class="paragraph">
+<p>-maxxangle: Rotação máxima da imagem base em x</p>
+</div>
+<div class="paragraph">
+<p>-maxyangle: Rotação máxima da imagem base em y</p>
+</div>
+<div class="paragraph">
+<p>-maxzangle: Rotação máxima da imagem base em z</p>
+</div>
+<div class="paragraph">
+<p>-num: Número de imagens Negativas</p>
+</div>
+<div class="paragraph">
+<p>-w: Largura proporcional da imagem</p>
+</div>
+<div class="paragraph">
+<p>-h: Altura proporcional da imagem</p>
+</div>
+<div class="paragraph">
+<p>O comando usado para isso pode ser mostrado a seguir:</p>
+</div>
+<div class="paragraph">
+<p>opencv_createsamples -img coke-gray.jpg -bg bg.txt -info info3/info.dat -maxxangle 0.5 -maxyangle 0.5 -maxzangle 0.5 -num 9963 -w 24 -h 8</p>
+</div>
+<div class="paragraph">
+<p>Após lançado esse comando, a pasta info/ estará contendo 9963 imagens com o logotipo da Coca-Cola inserido de forma randômica, como mostrado nas imagens a seguir:</p>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="exemplos/Unidade3/9959_0182_0074_0163_0054.jpg" alt="0045_0126_0047_0314_0104">
+</div>
+<div class="title">Figure 14. Imagem positiva 1</div>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="exemplos/Unidade3/9961_0229_0036_0201_0067.jpg" alt="0159_0275_0014_0154_0051">
+</div>
+<div class="title">Figure 15. Imagem positiva 2</div>
+</div>
+<div class="paragraph">
+<p>E o arquivo info.dat estará como</p>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<caption class="title">Table 1. info.dat</caption>
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0001_0058_0022_0256_0085.jpg 1 58 22 256 85</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0002_0140_0035_0276_0092.jpg 1 140 35 276 92</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0003_0166_0010_0276_0092.jpg 1 166 10 276 92</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0004_0315_0013_0131_0043.jpg 1 315 13 131 43</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0005_0104_0089_0122_0040.jpg 1 104 89 122 40</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0006_0103_0059_0137_0045.jpg 1 103 59 137 45</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_criando_o_arquivo_positives_vec">Criando o arquivo positives.vec</h4>
+<div class="paragraph">
+<p>O penultimo passo é criar um arquivo .vec que será usado para o treinamento, basicamente é um arquivo que vai armazenar, assim como o info.dat, a localização das imagens positivas</p>
+</div>
+<div class="paragraph">
+<p>Com isso, lançamos o comando:</p>
+</div>
+<div class="paragraph">
+<p>opencv_createsamples -info info3/info.dat -w 24 -h 8 -num 9963 -vec positives.vec</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_treinamento">Treinamento</h4>
+<div class="paragraph">
+<p>Possuindo o maior número de argumentos possível,o comando opencv_traincascade é onde ocorre o passo final e é a etapa mais desafiadora. Contudo é possível realizar um treinamento com parâmetros aceitáveis
+o seguinte número de argumentos:</p>
+</div>
+<div class="paragraph">
+<p>opencv_traincascade -data data3 -vec positives.vec -bg bg.txt -numPos 5400 -numNeg 2700 -numStages 25 -w 24 -h 8</p>
+</div>
+<div class="paragraph">
+<p>Onde:</p>
+</div>
+<div class="paragraph">
+<p>-data: Pasta onde será salvo o arquivo "cascade.xml"</p>
+</div>
+<div class="paragraph">
+<p>-vec: arquivo .vec criado anteriormente</p>
+</div>
+<div class="paragraph">
+<p>-numPos: Número de Amostras positivas usadas por rodada</p>
+</div>
+<div class="paragraph">
+<p>-numNeg: Número de amostras negativas usadas por rodada</p>
+</div>
+<div class="paragraph">
+<p>-numStages: Número de Estágios ao qual nosso algoritmo vai passar</p>
+</div>
+<div class="paragraph">
+<p>-w: Largura usada na Imagem Base</p>
+</div>
+<div class="paragraph">
+<p>-h: Altura Usada na Imagem Base</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_resultado_final">Resultado Final</h4>
+<div class="paragraph">
+<p>Após a execução do treinamento, nosso arquivo "cascade.xml" foi capaz de identificar o logotipo da Coca em varias imagens, como mostrados a seguir:</p>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="exemplos/Unidade3/demo0.jpg" alt="demo0.jpg">
+</div>
+<div class="title">Figure 16. Exemplo 1</div>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="exemplos/Unidade3/demo1.jpg" alt="demo1.jpg">
+</div>
+<div class="title">Figure 17. Exemplo 2</div>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="exemplos/Unidade3/demo2.jpg" alt="demo2.jpg">
+</div>
+<div class="title">Figure 18. Exemplo 3</div>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="exemplos/Unidade3/demo3.jpg" alt="demo3.jpg">
+</div>
+<div class="title">Figure 19. Exemplo 4</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_referências">Referências</h3>
+<div class="paragraph">
+<p><a href="https://docs.opencv.org/3.4/dc/d88/tutorial_traincascade.html">https://docs.opencv.org/3.4/dc/d88/tutorial_traincascade.html</a></p>
+</div>
+</div>
+</div>
+</div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2018-05-19 17:12:30 -03
+Last updated 2018-06-20 19:25:03 -03
 </div>
 </div>
 </body>
